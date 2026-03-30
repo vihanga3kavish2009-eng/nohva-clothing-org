@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>NOHVA | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed": "#221b00", "on-error-container": "#93000a", "secondary-fixed": "#e2e2e2", "inverse-on-surface": "#f1f1f1", "on-secondary": "#ffffff", "tertiary-container": "#00f1ff", "tertiary": "#00696f", "surface-container-lowest": "#ffffff", "surface-container": "#eeeeee", "surface-container-low": "#f3f3f3", "on-tertiary-fixed-variant": "#004f54", "background": "#f9f9f9", "primary-container": "#ffd700", "on-primary-fixed-variant": "#544600", "on-surface-variant": "#4d4732", "primary-fixed-dim": "#e9c400", "outline-variant": "#d0c6ab", "inverse-surface": "#303030", "on-primary-container": "#705e00", "surface-tint": "#705d00", "on-primary": "#ffffff", "on-surface": "#1b1b1b", "on-error": "#ffffff", "surface-container-highest": "#e2e2e2", "secondary-fixed-dim": "#c6c6c6", "on-tertiary-fixed": "#002022", "tertiary-fixed-dim": "#00dbe8", "primary": "#705d00", "outline": "#7e775f", "error-container": "#ffdad6", "surface-bright": "#f9f9f9", "on-secondary-container": "#646464", "on-background": "#1b1b1b", "error": "#ba1a1a", "on-secondary-fixed": "#1b1b1b", "surface-variant": "#e2e2e2", "surface-dim": "#dadada", "secondary": "#5e5e5e", "surface-container-high": "#e8e8e8", "on-tertiary-container": "#006a70", "primary-fixed": "#ffe16d", "tertiary-fixed": "#79f5ff", "secondary-container": "#e2e2e2", "on-secondary-fixed-variant": "#474747", "on-tertiary": "#ffffff", "inverse-primary": "#e9c400", "surface": "#f9f9f9"
+            },
+            fontFamily: {
+              "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Manrope', sans-serif; }
+
+        /* Image Upload Styles */
+        .upload-zone {
+            position: relative;
+            border: 2px dashed rgba(208, 198, 171, 0.4);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            overflow: hidden;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #705d00;
+            background: rgba(112, 93, 0, 0.04);
+        }
+        .upload-zone.has-image {
+            border-style: solid;
+            border-color: rgba(112, 93, 0, 0.3);
+        }
+        .upload-preview {
+            position: relative;
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            display: none;
+        }
+        .upload-preview.visible {
+            display: block;
+            animation: fadeScale 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        @keyframes fadeScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(27, 27, 27, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+        }
+        .upload-zone.has-image:hover .upload-overlay {
+            opacity: 1;
+        }
+        .upload-overlay button {
+            padding: 8px 16px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border: 1px solid rgba(255,255,255,0.5);
+            color: #fff;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-overlay button:hover {
+            background: #fff;
+            color: #1b1b1b;
+        }
+        .upload-overlay button.remove {
+            border-color: #ba1a1a;
+            color: #ffdad6;
+        }
+        .upload-overlay button.remove:hover {
+            background: #ba1a1a;
+            color: #fff;
+        }
+        .upload-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: #705d00;
+            transition: width 0.3s ease;
+            z-index: 10;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            color: #5e5e5e;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active {
+            color: #1b1b1b;
+            border-bottom-color: #705d00;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .text-error { color: #ba1a1a !important; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-surface-container-lowest border-r-0 hidden md:flex flex-col fixed inset-y-0 z-50">
+        <div class="px-8 py-10">
+            <span class="text-2xl font-black tracking-tighter text-on-surface uppercase"><a href="index.html">NOHVA</a></span>
+        </div>
+        <nav class="flex-1 px-4 space-y-2">
+            <a class="flex items-center px-4 py-3 text-sm font-bold tracking-tight bg-primary-container text-on-primary-container transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)]" href="#">
+                <span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+            <a class="flex items-center px-4 py-3 text-sm font-bold tracking-tight text-secondary hover:text-on-surface transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)]" href="index.html">
+                <span class="material-symbols-outlined mr-3" data-icon="storefront">storefront</span>
+                Storefront
+            </a>
+            <button id="logoutBtn" class="w-full flex items-center px-4 py-3 text-sm font-bold tracking-tight text-error hover:bg-error-container transition-all duration-600 ease-[cubic-bezier(0.23,1,0.32,1)]">
+                <span class="material-symbols-outlined mr-3" data-icon="logout">logout</span>
+                Logout
+            </button>
+        </nav>
+        <div class="p-8 border-t-0 bg-surface-container-low mt-auto">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-on-surface flex items-center justify-center text-surface">
+                    <span class="font-bold text-xs uppercase">NA</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-on-surface">Admin Nohva</p>
+                    <p class="text-[10px] text-secondary uppercase tracking-widest">Architectural Tier</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 md:ml-64 p-8 lg:p-12">
+        <header class="mb-12 flex justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter text-on-surface uppercase mb-2">Architectural Overview</h1>
+                <p class="text-secondary font-light tracking-widest text-xs uppercase">Women & Kids Management / Q4 Session</p>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div class="bg-surface-container-lowest p-8 flex flex-col justify-between h-48 group">
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">Total Products</span>
+                    <span class="material-symbols-outlined text-primary" data-icon="category">category</span>
+                </div>
+                <div>
+                    <h2 id="totalProductsStat" class="text-5xl font-black tracking-tighter text-on-surface">0</h2>
+                    <p class="text-[10px] text-tertiary font-bold uppercase mt-2">Active in vault</p>
+                </div>
+            </div>
+            <div class="bg-primary-container p-8 flex flex-col justify-between h-48 group relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+                <div class="relative z-10 flex justify-between items-start">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container">Total Portfolio Value</span>
+                    <span class="material-symbols-outlined text-on-primary-container" data-icon="payments">payments</span>
+                </div>
+                <div class="relative z-10">
+                    <h2 id="totalRevenueStat" class="text-3xl md:text-5xl font-black tracking-tighter text-on-primary-container">LKR 0</h2>
+                    <p class="text-[10px] text-on-primary-container/70 font-bold uppercase mt-2">Estimated worth</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add New Product Section -->
+        <section class="mb-16">
+            <div class="flex items-center space-x-4 mb-8">
+                <div class="h-[2px] w-12 bg-primary"></div>
+                <h3 class="text-xl font-black tracking-tighter uppercase">Inventory Genesis</h3>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Image Upload Area -->
+                <div class="lg:col-span-5">
+                    <!-- Upload Mode Tabs -->
+                    <div class="flex border-b border-outline-variant/30 mb-0">
+                        <button type="button" class="tab-btn active" data-tab="upload">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1" style="font-size:14px">upload_file</span>
+                            Upload File
+                        </button>
+                        <button type="button" class="tab-btn" data-tab="url">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1" style="font-size:14px">link</span>
+                            Image URL
+                        </button>
+                    </div>
+
+                    <!-- Tab: File Upload -->
+                    <div class="tab-content active" id="tab-upload">
+                        <div id="uploadZone" class="upload-zone bg-surface-container-low flex flex-col items-center justify-center p-12 text-center cursor-pointer min-h-[300px]">
+                            <div class="upload-placeholder">
+                                <div class="w-16 h-16 bg-surface-container-lowest flex items-center justify-center mx-auto mb-5">
+                                    <span class="material-symbols-outlined text-2xl text-primary">cloud_upload</span>
+                                </div>
+                                <p class="text-xs font-bold uppercase tracking-widest mb-2">Click or Drop Image</p>
+                                <p class="text-[10px] text-secondary uppercase tracking-widest font-light mb-6">JPG, PNG, WebP — Max 10MB</p>
+                                <button id="selectFileBtn" type="button" class="border border-on-surface px-6 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-on-surface hover:text-surface transition-colors">
+                                    Browse Files
+                                </button>
+                            </div>
+                            <img id="previewImage" class="upload-preview" alt="Preview">
+                            <div class="upload-overlay">
+                                <button type="button" id="changeImageBtn">Change</button>
+                                <button type="button" id="removeImageBtn" class="remove">Remove</button>
+                            </div>
+                            <div class="upload-progress" id="uploadProgress" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: URL Input -->
+                    <div class="tab-content" id="tab-url">
+                        <div class="bg-surface-container-low p-8 min-h-[300px] flex flex-col">
+                            <label class="text-[10px] font-bold uppercase tracking-widest text-secondary block mb-3">Paste Image URL</label>
+                            <input id="imageUrlInput" type="url" class="w-full bg-transparent border-0 border-b border-outline-variant py-2 focus:ring-0 focus:border-primary placeholder:text-outline-variant text-sm font-bold tracking-tight mb-4" placeholder="https://example.com/image.jpg"/>
+                            <button type="button" id="loadUrlBtn" class="border border-on-surface px-6 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-on-surface hover:text-surface transition-colors self-start mb-4">
+                                Load Preview
+                            </button>
+                            <div id="urlPreviewWrap" class="flex-1 flex items-center justify-center">
+                                <img id="urlPreviewImage" class="upload-preview max-h-[200px]" alt="URL Preview">
+                                <p id="urlPlaceholder" class="text-[10px] text-secondary uppercase tracking-widest font-light">Preview will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+                    <input type="hidden" id="imageResult" value="">
+                </div>
+
+                <!-- Product Details Form -->
+                <div class="lg:col-span-7 bg-surface-container-lowest p-10">
+                    <form class="space-y-8" id="addForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-secondary block">Product Name</label>
+                                <input id="product-name" required class="w-full bg-transparent border-0 border-b border-outline-variant py-2 focus:ring-0 focus:border-primary placeholder:text-outline-variant text-sm font-bold uppercase tracking-tight" placeholder="e.g. SILK SLIP DRESS" type="text"/>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-secondary block">Retail Price (LKR)</label>
+                                <input id="retail-price" required class="w-full bg-transparent border-0 border-b border-outline-variant py-2 focus:ring-0 focus:border-primary placeholder:text-outline-variant text-sm font-bold uppercase tracking-tight" placeholder="0.00" type="number"/>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-secondary block">Core Category</label>
+                                <select id="core-category" required class="w-full bg-transparent border-0 border-b border-outline-variant py-2 focus:ring-0 focus:border-primary text-sm font-bold uppercase tracking-tight appearance-none">
+                                    <option value="women">Women</option>
+                                    <option value="kids">Kids</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-secondary block">Item Type</label>
+                                <input id="item-type" required class="w-full bg-transparent border-0 border-b border-outline-variant py-2 focus:ring-0 focus:border-primary placeholder:text-outline-variant text-sm font-bold uppercase tracking-tight" placeholder="e.g. Trouser" type="text"/>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold uppercase tracking-widest text-secondary block">Available Size</label>
+                                <input id="available-size" required class="w-full bg-transparent border-0 border-b border-outline-variant py-2 focus:ring-0 focus:border-primary placeholder:text-outline-variant text-sm font-bold uppercase tracking-tight" placeholder="S, M, L" type="text"/>
+                            </div>
+                        </div>
+                        
+                        <button id="commit-btn" class="w-full bg-on-surface text-surface py-5 text-xs font-bold uppercase tracking-[0.2em] hover:bg-primary transition-all duration-600" type="submit">
+                            Commit Product to Archive
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Existing Products Table -->
+        <section class="mb-16">
+            <div class="flex items-center space-x-4 mb-8">
+                <div class="h-[2px] w-12 bg-primary"></div>
+                <h3 class="text-xl font-black tracking-tighter uppercase">Archived Entities</h3>
+            </div>
+            
+            <div class="bg-surface-container-lowest overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low">
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface">Visual Reference</th>
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface">Identity</th>
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface">Category</th>
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface">Type</th>
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface">Size</th>
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface">Valuation</th>
+                            <th class="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryList" class="divide-y divide-surface-container">
+                        <!-- Filled by admin.js -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Data Import Section -->
+        <section class="mb-16">
+            <div class="flex items-center space-x-4 mb-8">
+                <div class="h-[2px] w-12 bg-primary"></div>
+                <h3 class="text-xl font-black tracking-tighter uppercase">Data Import</h3>
+            </div>
+            <div class="bg-surface-container-lowest p-10">
+                <p class="text-xs font-bold uppercase tracking-widest mb-4 text-secondary">Upload CSV file to import products in bulk</p>
+                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+                <button id="selectCsvBtn" type="button" class="border border-on-surface px-6 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-on-surface hover:text-surface transition-colors">
+                    Select Files
+                </button>
+                <p id="csvStatus" class="text-[10px] text-secondary uppercase tracking-widest mt-4 hidden">File selected: <span id="csvFileName"></span></p>
+                <button id="importBtn" class="w-full bg-on-surface text-surface py-5 mt-4 text-xs font-bold uppercase tracking-[0.2em] hover:bg-primary transition-all duration-600 hidden" type="button">
+                    Import Products
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Supabase & Administrative Scripts -->
+    <script src="js/db.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
